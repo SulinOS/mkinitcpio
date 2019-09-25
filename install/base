@@ -5,7 +5,7 @@ build() {
 
     add_binary /bin/busybox /bin/busybox
 
-    for applet in $(/usr/lib/initcpio/busybox --list); do
+    for applet in $(/bin/busybox --list); do
         add_symlink "/usr/bin/$applet" busybox
     done
 
