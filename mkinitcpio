@@ -220,7 +220,7 @@ build_image() {
 
     pushd "$BUILDROOT" >/dev/null
     find . -mindepth 1 -printf '%P\0' |
-            LANG=C bsdcpio "${cpio_opts[@]}" |
+            LANG=C cpio "${cpio_opts[@]}" |
             $compress "${COMPRESSION_OPTIONS[@]}" > "$out"
     pipesave=("${PIPESTATUS[@]}") # save immediately
     popd >/dev/null
@@ -228,7 +228,7 @@ build_image() {
     if (( pipesave[0] )); then
         errmsg="find reported an error"
     elif (( pipesave[1] )); then
-        errmsg="bsdcpio reported an error"
+        errmsg="cpio reported an error"
     elif (( pipesave[2] )); then
         errmsg="$compress reported an error"
     fi
