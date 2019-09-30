@@ -34,7 +34,6 @@ add_keymap_file() {
 }
 
 build() {
-    add_binary /usr/lib/systemd/systemd-vconsole-setup
     add_binary loadkeys
     add_binary setfont
     add_file /etc/vconsole.conf
