@@ -40,14 +40,13 @@ install: all
 	install -m644 mkinitcpio.conf $(DESTDIR)/etc/mkinitcpio.conf
 	install -m755 -t $(DESTDIR)/usr/lib/initcpio init shutdown
 	install -m644 -t $(DESTDIR)/usr/lib/initcpio init_functions functions
-	install -m644 udev/01-memdisk.rules $(DESTDIR)/usr/lib/initcpio/udev/01-memdisk.rules
 
 	cp -at $(DESTDIR)/usr/lib/initcpio hooks install
 	install -m644 -t $(DESTDIR)/usr/share/mkinitcpio mkinitcpio.d/*
 	install -m644 tmpfiles/mkinitcpio.conf $(DESTDIR)/usr/lib/tmpfiles.d/mkinitcpio.conf
 
 	install -m755 50-mkinitcpio.install $(DESTDIR)/usr/lib/kernel/install.d/50-mkinitcpio.install
-
+	cp -prf udev $(DESTDIR)/usr/lib/
 check:
 	@r=0; for t in test/test_*; do $$t || { echo $$t fail; r=1; }; done; exit $$r
 	@r=0; for s in $(BASH_SCRIPTS); do bash -O extglob -n $$s || r=1; done; exit $$r
