@@ -3,19 +3,19 @@
 # mkinitcpio - modular tool for building an initramfs images
 #
 
-declare -r version=%VERSION%
+declare -r version=25
 
 shopt -s extglob
 
 ### globals within mkinitcpio, but not intended to be used by hooks
 
 # needed files/directories
-_f_functions=functions
-_f_config=mkinitcpio.conf
-_d_hooks="$PWD/hooks:/usr/lib/initcpio/hooks:/lib/initcpio/hooks"
-_d_install="$PWD/install:/usr/lib/initcpio/install:/lib/initcpio/install"
+_f_functions=/usr/lib/initcpio/functions
+_f_config=/etc/mkinitcpio.conf
+_d_hooks=/etc/initcpio/hooks:/usr/lib/initcpio/hooks
+_d_install=/etc/initcpio/install:/usr/lib/initcpio/install
 _d_firmware=({/usr,}/lib/firmware/updates {/usr,}/lib/firmware)
-_d_presets=mkinitcpio.d
+_d_presets=/etc/mkinitcpio.d
 
 # options and runtime data
 _optmoduleroot= _optgenimg=

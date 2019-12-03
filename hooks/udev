@@ -1,7 +1,7 @@
 #!/usr/bin/ash
 
 run_earlyhook() {
-    kmod static-nodes --format=tmpfiles --output=/run/tmpfiles.d/kmod.conf
+    udevd --daemon --resolve-names=never
     udevd_running=1
 }
 
