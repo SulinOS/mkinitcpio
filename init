@@ -43,7 +43,7 @@ if [ -n "$boot"  ]
     for part in $list
     do
         msg "Debug : looking for $part"
-        if is_file_avaiable "$part" "$boot/filesystem.squashfs"
+        if is_file_avaiable "$part" "$boot/filesystem.squashfs" || is_file_avaiable "$part" "$boot/filesystem.img"
         then
            export root=$part
         fi
@@ -71,7 +71,17 @@ then
     mkdir -p /tmp/b # workdir
     mkdir -p /live_root/
     mkdir -p /source/ # lower
-    mount /new_root/$boot/filesystem.squashfs /source/
+    if [ -f /new_root/$boot/filesystem.squashfs ] 
+    then
+        mount /new_root/$boot/filesystem.squashfs /source/
+    elif [ -f /new_root/$boot/filesystem.img ] 
+    then
+        mount /new_root/$boot/filesystem.img /source/
+    else
+        err "Failed to mount the live root device."
+        warn
+        launch_interactive_shell --exec
+    if
     if [ "$overlay" == "disable" ]
     then
         warn "Overlayfs disabled!"
