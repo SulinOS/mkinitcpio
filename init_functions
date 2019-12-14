@@ -20,7 +20,7 @@ fi
 
 # usefull functions
 msg() {
-     [ "${quiet}" != "y" ] echo -e " ${C_GREEN}*${C_CLEAR} ${@}"
+    echo -e " ${C_GREEN}*${C_CLEAR} ${@}"
 }
 
 warn() {
