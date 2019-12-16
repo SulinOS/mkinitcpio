@@ -7,7 +7,6 @@ build() {
         add_all_modules -f 'udf' '/kernel/fs'
         add_all_modules -f 'ext4' '/kernel/fs'
         add_all_modules -f 'hfsplus' '/kernel/fs'
-        add_all_modules -f 'loopback' '/kernel/'
 }
 
 help() {
