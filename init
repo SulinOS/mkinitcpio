@@ -12,10 +12,6 @@ mount_setup
 msg "Parsing kernel parameters"
 parse_cmdline </proc/cmdline
 
-# setup logging as early as possible
-#msg "Starting rdlogger"
-#rdlogger_start
-
 for d in ${disablehooks//,/ }; do
     [ -e "/hooks/$d" ] && chmod 644 "/hooks/$d"
 done
@@ -67,11 +63,11 @@ run_hookfunctions 'run_cleanuphook' 'cleanup hook' $CLEANUPHOOKS
 #live-boot feature
 if [ -n "$boot"  ]
 then
-    mkdir -p /tmp/a # upper
-    mkdir -p /tmp/b # workdir
+    mkdir -p /donkey/a # upper
+    mkdir -p /donkey/b # workdir
     mkdir -p /live_root/
     mkdir -p /source/ # lower
-    mount /new_root/$boot/filesystem.squashfs /source/
+    mount /new_root/$boot/filesystem.squashfs /source/ 2> /dev/null
     if [ "$overlay" == "disable" ]
     then
         warn "Overlayfs disabled!"
@@ -79,15 +75,15 @@ then
         msg "Copying rootfs files => /live_root"
         cp -vprf /source/* /live_root/
     else
-        mount -t overlay -o lowerdir=/source/,upperdir=/tmp/a/,workdir=/tmp/b overlay /live_root
-        mount -t tmpfs -o size=100% none /tmp/a
-        mount -t tmpfs -o size=100% none /tmp/b
+        mount -t overlay -o lowerdir=/source/,upperdir=/donkey/a/,workdir=/donkey/b overlay /live_root
+        mount -t tmpfs -o size=100% none /donkey/a
+        mount -t tmpfs -o size=100% none /donkey/b
     fi
     mount --bind /live_root /new_root/
-    mkdir /new_root/cdrom/
-    mkdir /new_root/source/
-    mount $root /new_root/cdrom/
-    mount /new_root/cdrom/$boot/filesystem.squashfs /new_root/source/
+    mkdir /new_root/cdrom/ 2> /dev/null
+    mkdir /new_root/source/ 2> /dev/null
+    mount $root /new_root/cdrom/ 2> /dev/null
+    mount /new_root/cdrom/$boot/filesystem.squashfs /new_root/source/ 2> /dev/null
 fi
 
 if [ "$(stat -c %D /)" = "$(stat -c %D /new_root)" ]; then
@@ -113,8 +109,6 @@ if [ "${break}" = "postmount" ]; then
 fi
 
 # this should always be the last thing we do before the switch_root.
-#msg "Stoping rdlogger"
-#rdlogger_stop
 if [ -f /new_root/etc/initrd.local ]; then
     msg "Running local initrd scripts"
     . /new_root/etc/initrd.local || true
