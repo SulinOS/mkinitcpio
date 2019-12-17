@@ -67,7 +67,7 @@ then
     mkdir -p /donkey/b # workdir
     mkdir -p /live_root/
     mkdir -p /source/ # lower
-    mount /new_root/$boot/filesystem.squashfs /source/ 2> /dev/null
+    mount /new_root/$boot/filesystem.squashfs /source/ 
     if [ "$overlay" == "disable" ]
     then
         warn "Overlayfs disabled!"
@@ -80,10 +80,10 @@ then
         mount -t tmpfs -o size=100% none /donkey/b
     fi
     mount --bind /live_root /new_root/
-    mkdir /new_root/cdrom/ 2> /dev/null
-    mkdir /new_root/source/ 2> /dev/null
-    mount $root /new_root/cdrom/ 2> /dev/null
-    mount /new_root/cdrom/$boot/filesystem.squashfs /new_root/source/ 2> /dev/null
+    mkdir /new_root/cdrom/ 
+    mkdir /new_root/source/ 
+    mount $root /new_root/cdrom/ 
+    mount /new_root/cdrom/$boot/filesystem.squashfs /new_root/source/ 
 fi
 
 if [ "$(stat -c %D /)" = "$(stat -c %D /new_root)" ]; then
@@ -103,12 +103,8 @@ elif [ ! -x "/new_root${init}" ]; then
     launch_interactive_shell --exec
 fi
 
-
-# this should always be the last thing we do before the switch_root.
-if [ -f /new_root/etc/initrd.local ]; then
-    msg "Running local initrd scripts"
-    . /new_root/etc/initrd.local || true
-fi
+# We must mount /tmp as tmpfs
+mount -t tmpfs -o size=100% none /new_root/tmp
 
 if [ -f /new_root/etc/os-release ]; then
     msg "Wellcome to $(cat /new_root/etc/os-release | grep '^NAME=' | head -n 1 | sed 's/^.*=//g')"
@@ -123,7 +119,7 @@ fi
 
 exec env -i \
     "TERM=$TERM" \
-    /usr/bin/switch_root /new_root $init "$@"
+    /usr/bin/switch_root /new_root $init "$@" || launch_interactive_shell
 
 # vim: set ft=sh ts=4 sw=4 et:
 

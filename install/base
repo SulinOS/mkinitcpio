@@ -4,7 +4,6 @@ build() {
     local applet
 
     add_binary $(which busybox) /bin/busybox
-    add_binary $(which toybox) /bin/toybox
 
     for applet in $($(which busybox) --list); do
         add_symlink "/usr/bin/$applet" busybox
