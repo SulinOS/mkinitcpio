@@ -22,6 +22,9 @@ fi
 msg() {
     echo -e " ${C_GREEN}*${C_CLEAR} ${@}"
 }
+debug() {
+    [ ! -n "$debug"  ] || echo -e " ${C_BLUE}*${C_CLEAR} ${@}"
+}
 
 warn() {
     echo -e " ${C_YELLOW}*${C_CLEAR} ${@}"

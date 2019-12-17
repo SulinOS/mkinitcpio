@@ -13,8 +13,8 @@ msg "Parsing kernel parameters"
 parse_cmdline </proc/cmdline
 
 # setup logging as early as possible
-msg "Starting rdlogger"
-rdlogger_start
+#msg "Starting rdlogger"
+#rdlogger_start
 
 for d in ${disablehooks//,/ }; do
     [ -e "/hooks/$d" ] && chmod 644 "/hooks/$d"
@@ -42,7 +42,7 @@ if [ -n "$boot"  ]
     list=$(ls /sys/block/ | grep -v loop | grep -v ram | grep -v nbd | sed "s|^|/sys/block/|g" | subdev)
     for part in $list
     do
-        msg "Debug : looking for $part"
+        debug "Looking for $part"
         if is_file_avaiable "$part" "$boot/filesystem.squashfs"
         then
            export root=$part
@@ -50,15 +50,15 @@ if [ -n "$boot"  ]
     done
 fi
 #non-live detection
-msg "Debug : looking for $root"
+debug "Looking for $root"
 rootdev=$(resolve_device "$root") && root=$rootdev
 unset rootdev
-msg "Detected root device: $root"
+debug "Detected root device: $root"
 msg "Running fsck for $root"
 fsck_root
 
 # Mount root at /new_root
-msg "Mounting $root => /new_root"
+debug "Mounting $root => /new_root"
 "$mount_handler" /new_root
 msg "Running late hook"
 run_hookfunctions 'run_latehook' 'late hook' $LATEHOOKS
@@ -77,17 +77,17 @@ then
         warn "Overlayfs disabled!"
         mount -t tmpfs -o size=100% none /live_root
         msg "Copying rootfs files => /live_root"
-        cp -rf /source/* /live_root/
+        cp -vprf /source/* /live_root/
     else
         mount -t overlay -o lowerdir=/source/,upperdir=/tmp/a/,workdir=/tmp/b overlay /live_root
         mount -t tmpfs -o size=100% none /tmp/a
         mount -t tmpfs -o size=100% none /tmp/b
     fi
-    mkdir /live_root/cdrom
-    mkdir /live_root/source
-    mount --bind  /new_root/ /live_root/cdrom
-    mount --bind /source/ /live_root/source/
     mount --bind /live_root /new_root/
+    mkdir /new_root/cdrom/
+    mkdir /new_root/source/
+    mount $root /new_root/cdrom/
+    mount /new_root/cdrom/$boot/filesystem.squashfs /new_root/source/
 fi
 
 if [ "$(stat -c %D /)" = "$(stat -c %D /new_root)" ]; then
@@ -113,8 +113,8 @@ if [ "${break}" = "postmount" ]; then
 fi
 
 # this should always be the last thing we do before the switch_root.
-msg "Stoping rdlogger"
-rdlogger_stop
+#msg "Stoping rdlogger"
+#rdlogger_stop
 if [ -f /new_root/etc/initrd.local ]; then
     msg "Running local initrd scripts"
     . /new_root/etc/initrd.local || true
