@@ -103,10 +103,6 @@ elif [ ! -x "/new_root${init}" ]; then
     launch_interactive_shell --exec
 fi
 
-if [ "${break}" = "postmount" ]; then
-    warn ":: Post-mount break requested, type 'exit' to resume operation"
-    launch_interactive_shell
-fi
 
 # this should always be the last thing we do before the switch_root.
 if [ -f /new_root/etc/initrd.local ]; then
@@ -118,6 +114,11 @@ if [ -f /new_root/etc/os-release ]; then
     msg "Wellcome to $(cat /new_root/etc/os-release | grep '^NAME=' | head -n 1 | sed 's/^.*=//g')"
 else
     msg "Wellcome to GNU/Linux..."
+fi
+
+if [ "${break}" = "postmount" ]; then
+    warn ":: Post-mount break requested, type 'exit' to resume operation"
+    launch_interactive_shell
 fi
 
 exec env -i \
