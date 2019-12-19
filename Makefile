@@ -41,6 +41,7 @@ install: all
 	install -m644 -t $(DESTDIR)/usr/lib/initcpio init_functions functions
 
 	cp -at $(DESTDIR)/usr/lib/initcpio hooks install
+	install -m644 -t $(DESTDIR)/usr/share/mkinitcpio mkinitcpio.d/*
 	install -m644 tmpfiles/mkinitcpio.conf $(DESTDIR)/usr/lib/tmpfiles.d/mkinitcpio.conf
 
 	install -m755 50-mkinitcpio.install $(DESTDIR)/usr/lib/kernel/install.d/50-mkinitcpio.install
