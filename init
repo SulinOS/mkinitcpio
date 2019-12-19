@@ -1,5 +1,4 @@
 #!/usr/bin/ash
-
 udevd_running=0
 mount_handler=default_mount_handler
 init=/sbin/init
@@ -11,6 +10,9 @@ mount_setup
 # parse the kernel command line
 msg "Parsing kernel parameters"
 parse_cmdline </proc/cmdline
+
+[ ! -n ${nostderr} ] || exec 2> /dev/null
+[ ! -n ${nostdout} ] || exec > /dev/null
 
 for d in ${disablehooks//,/ }; do
     [ -e "/hooks/$d" ] && chmod 644 "/hooks/$d"
@@ -35,7 +37,7 @@ fi
 #live rootfs detection
 if [ -n "$boot"  ]
     then
-    list=$(ls /sys/block/ | grep -v loop | grep -v ram | grep -v nbd | sed "s|^|/sys/block/|g" | subdev)
+    list=$(ls /sys/class/block/ | grep -v loop | grep -v ram | grep -v nbd | sed "s|^|/dev/|g")
     for part in $list
     do
         debug "Looking for $part"
@@ -123,7 +125,7 @@ fi
 
 exec env -i \
     "TERM=$TERM" \
-    /usr/bin/switch_root /new_root $init "$@"
+    /usr/bin/switch_root /new_root $init "$@" || launch_interactive_shell
 
 # vim: set ft=sh ts=4 sw=4 et:
 

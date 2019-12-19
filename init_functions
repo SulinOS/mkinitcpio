@@ -368,16 +368,9 @@ mount_setup() {
 is_file_avaiable(){
     mkdir -p /tmp/disktmp 2> /dev/null || true 
     mount -t auto "$1" /tmp/disktmp  2> /dev/null || true
-    [ -f "/tmp/disktmp/$2" ]
+    [ -f "/tmp/disktmp/$2" ] && [ -b "$1" ]
     status=$?
     umount /tmp/disktmp 2> /dev/null || true
     return $status
-}
-subdev(){
-    while read device
-    do
-        basename $device | sed "s/^/\/dev\//g"
-        ls $device | grep $(basename $device)| sed "s/^/\/dev\//g"
-    done
 }
 # vim: set ft=sh ts=4 sw=4 et:
