@@ -9,13 +9,10 @@ msg "Begining boot process"
 touch /mount.lock
 
 
-
 # parse the kernel command line
 msg "Parsing kernel parameters"
 parse_cmdline </proc/cmdline
 
-[ ! -n ${nostderr} ] || exec 2> /dev/null
-[ ! -n ${nostdout} ] || exec > /dev/null
 
 msg "Configuring"
 . /config
@@ -31,16 +28,16 @@ if [ "${break}" = "y" ] || [ "${break}" = "premount" ]; then
 fi
 #Fix xhci and ehci bugs 
 debug "Waiting for devices..."
-sleep 5
+sleep 3
 msg "Detecting live_root"
 #live rootfs detection
-if [ -n "$boot"  ] && [ ! -n "$root"  ]
+if [ -n "$boot"  ]
     then
     list=$(ls /sys/class/block/ | grep ".*[0-9]$" | grep -v loop | grep -v ram | grep -v nbd | sed "s|^|/dev/|g")
     for part in $list
     do
         debug "Looking for $part"
-        if is_file_avaiable "$part" "$boot/filesystem.squashfs" 2> /dev/null | cat > /dev/null
+        if is_file_avaiable "$part" "$boot/filesystem.squashfs"
         then
            export root=$part
         fi

@@ -362,15 +362,18 @@ mount_setup() {
 
     if [ -e /sys/firmware/efi ]; then
         mount -t efivarfs efivarfs /sys/firmware/efi/efivars -o nosuid,nodev,noexec
+        msg "UEFI mode detected."
     fi
 }
 
 is_file_avaiable(){
-    mkdir -p /tmp/disktmp || true 
-    mount -t auto "$1" /tmp/disktmp  || true
-    [ -f "/tmp/disktmp/$2" ] && [ -b "$1" ]
+    disktmp=$(mktemp)
+    rm -rf $disktmp
+    mkdir -p $disktmp || true 
+    mount -t auto "$1" $disktmp 2>/dev/null
+    [ -f "$disktmp/$2" ] && [ -b "$1" ]
     status=$?
-    umount -Rf /tmp/disktmp || true
+    umount $disktmp 2>/dev/null
     return $status
 }
 # vim: set ft=sh ts=4 sw=4 et:
