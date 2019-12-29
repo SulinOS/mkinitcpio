@@ -5,7 +5,10 @@ init=/sbin/init
 rd_logmask=0
 . /init_functions
 msg "Begining boot process"
-mount_setup
+[ -f /mount.lock ] || mount_setup
+touch /mount.lock
+
+
 
 # parse the kernel command line
 msg "Parsing kernel parameters"
@@ -14,34 +17,30 @@ parse_cmdline </proc/cmdline
 [ ! -n ${nostderr} ] || exec 2> /dev/null
 [ ! -n ${nostdout} ] || exec > /dev/null
 
-for d in ${disablehooks//,/ }; do
-    [ -e "/hooks/$d" ] && chmod 644 "/hooks/$d"
-done
 msg "Configuring"
 . /config
-msg "Running early hooks"
-run_hookfunctions 'run_earlyhook' 'early hook' $EARLYHOOKS
 
-if [ -n "$earlymodules$MODULES" ]; then
-    msg "Enabling module for $MODULES"
-    modprobe -qab ${earlymodules//,/ } $MODULES
-fi
-msg "Runningn hooks"
-run_hookfunctions 'run_hook' 'hook' $HOOKS
+msg "Loading all modules"
+find  /lib/modules/  "*.ko" | sed "s/.*\///g" | grep ".ko" | sed "s/.ko$//g" | sed "s/^/modprobe /g"> /load_modules.sh
+sh /load_modules.sh 2> /dev/null 
 
 # honor the old behavior of break=y as a synonym for break=premount
 if [ "${break}" = "y" ] || [ "${break}" = "premount" ]; then
     warn ":: Pre-mount break requested, type 'exit' to resume operation"
     launch_interactive_shell
 fi
+#Fix xhci and ehci bugs 
+debug "Waiting for devices..."
+sleep 5
+msg "Detecting live_root"
 #live rootfs detection
-if [ -n "$boot"  ]
+if [ -n "$boot"  ] && [ ! -n "$root"  ]
     then
-    list=$(ls /sys/class/block/ | grep -v loop | grep -v ram | grep -v nbd | sed "s|^|/dev/|g")
+    list=$(ls /sys/class/block/ | grep ".*[0-9]$" | grep -v loop | grep -v ram | grep -v nbd | sed "s|^|/dev/|g")
     for part in $list
     do
         debug "Looking for $part"
-        if is_file_avaiable "$part" "$boot/filesystem.squashfs"
+        if is_file_avaiable "$part" "$boot/filesystem.squashfs" 2> /dev/null | cat > /dev/null
         then
            export root=$part
         fi
@@ -58,10 +57,6 @@ fsck_root
 # Mount root at /new_root
 debug "Mounting $root => /new_root"
 "$mount_handler" /new_root
-msg "Running late hook"
-run_hookfunctions 'run_latehook' 'late hook' $LATEHOOKS
-msg "Runningn cleanup hook"
-run_hookfunctions 'run_cleanuphook' 'cleanup hook' $CLEANUPHOOKS
 #live-boot feature
 if [ -n "$boot"  ]
 then
@@ -69,7 +64,7 @@ then
     mkdir -p /donkey/b # workdir
     mkdir -p /live_root/
     mkdir -p /source/ # lower
-    mount /new_root/$boot/filesystem.squashfs /source/ 
+    mount /new_root/$boot/filesystem.squashfs /source/ 2> /dev/null
     if [ "$overlay" == "disable" ]
     then
         warn "Overlayfs disabled!"
@@ -82,10 +77,10 @@ then
         mount -t tmpfs -o size=100% none /donkey/b
     fi
     mount --bind /live_root /new_root/
-    mkdir /new_root/cdrom/ 
-    mkdir /new_root/source/ 
-    mount $root /new_root/cdrom/ 
-    mount /new_root/cdrom/$boot/filesystem.squashfs /new_root/source/ 
+    mkdir /new_root/cdrom/ 2> /dev/null
+    mkdir /new_root/source/ 2> /dev/null
+    mount $root /new_root/cdrom/ 2> /dev/null
+    mount /new_root/cdrom/$boot/filesystem.squashfs /new_root/source/ 2> /dev/null
 fi
 
 if [ "$(stat -c %D /)" = "$(stat -c %D /new_root)" ]; then
@@ -105,14 +100,12 @@ elif [ ! -x "/new_root${init}" ]; then
     launch_interactive_shell --exec
 fi
 
+
 # this should always be the last thing we do before the switch_root.
 if [ -f /new_root/etc/initrd.local ]; then
     msg "Running local initrd scripts"
     . /new_root/etc/initrd.local || true
 fi
-
-# We must mount /tmp as tmpfs
-mount -t tmpfs -o size=100% none /new_root/tmp
 
 if [ -f /new_root/etc/os-release ]; then
     msg "Wellcome to $(cat /new_root/etc/os-release | grep '^NAME=' | head -n 1 | sed 's/^.*=//g')"

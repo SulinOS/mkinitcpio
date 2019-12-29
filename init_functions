@@ -366,11 +366,11 @@ mount_setup() {
 }
 
 is_file_avaiable(){
-    mkdir -p /tmp/disktmp 2> /dev/null || true 
-    mount -t auto "$1" /tmp/disktmp  2> /dev/null || true
+    mkdir -p /tmp/disktmp || true 
+    mount -t auto "$1" /tmp/disktmp  || true
     [ -f "/tmp/disktmp/$2" ] && [ -b "$1" ]
     status=$?
-    umount /tmp/disktmp 2> /dev/null || true
+    umount -Rf /tmp/disktmp || true
     return $status
 }
 # vim: set ft=sh ts=4 sw=4 et:

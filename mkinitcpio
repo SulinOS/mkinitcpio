@@ -3,19 +3,21 @@
 # mkinitcpio - modular tool for building an initramfs images
 #
 
-declare -r version=25
+declare -r version=%VERSION%
 
 shopt -s extglob
 
 ### globals within mkinitcpio, but not intended to be used by hooks
 
 # needed files/directories
-_f_functions=/usr/lib/initcpio/functions
-_f_config=/etc/mkinitcpio.conf
-_d_hooks=/etc/initcpio/hooks:/usr/lib/initcpio/hooks
-_d_install=/etc/initcpio/install:/usr/lib/initcpio/install
+_f_functions=functions
+_f_config=mkinitcpio.conf
+_d_hooks="$PWD/hooks:/usr/lib/initcpio/hooks:/lib/initcpio/hooks"
+_d_install="$PWD/install:/usr/lib/initcpio/install:/lib/initcpio/install"
+_d_flag_hooks=
+_d_flag_install=
 _d_firmware=({/usr,}/lib/firmware/updates {/usr,}/lib/firmware)
-_d_presets=/etc/mkinitcpio.d
+_d_presets=mkinitcpio.d
 
 # options and runtime data
 _optmoduleroot= _optgenimg=
@@ -56,6 +58,7 @@ usage: ${0##*/} [options]
    -s, --save                   Save build directory. (default: no)
    -d, --generatedir <dir>      Write generated image into <dir>
    -t, --builddir <dir>         Use DIR as the temporary build directory
+   -D, --hookdir <dir>          Specify where to look for hooks.
    -V, --version                Display version information and exit
    -v, --verbose                Verbose output (default: no)
    -z, --compress <program>     Use an alternate compressor on the image
@@ -192,8 +195,7 @@ compute_hookset() {
 }
 
 build_image() {
-    local out=$1 compress=$2 errmsg=
-    local -a pipesave cpio_opts
+    local out=$1 compress=$2 errmsg pipestatus
 
     case $compress in
         cat)
@@ -211,27 +213,29 @@ build_image() {
             ;;
     esac
 
-    cpio_opts=('-0' '-o' '-H' 'newc')
-    (( _optquiet )) && cpio_opts+=('--quiet')
-    if (( EUID != 0 )); then
-        warning 'Not building as root, ownership cannot be preserved'
-        cpio_opts+=('-R' '0:0')
-    fi
-
     pushd "$BUILDROOT" >/dev/null
+
+    # Reproducibility: set all timestamps to 0
+    find . -mindepth 1 -execdir touch -hcd "@0" "{}" +
+
+    # If this pipeline changes, |pipeprogs| below needs to be updated as well.
     find . -mindepth 1 -printf '%P\0' |
-            LANG=C cpio "${cpio_opts[@]}" |
+            sort -z |
+            LANG=C bsdtar --null -cnf - -T - |
+            LANG=C bsdtar --uid 0 --gid 0 --null -cf - --format=newc @- |
             $compress "${COMPRESSION_OPTIONS[@]}" > "$out"
-    pipesave=("${PIPESTATUS[@]}") # save immediately
+
+    pipestatus=("${PIPESTATUS[@]}")
+    pipeprogs=('find' 'sort' 'bsdtar (step 1)' 'bsdtar (step 2)' "$compress")
+
     popd >/dev/null
 
-    if (( pipesave[0] )); then
-        errmsg="find reported an error"
-    elif (( pipesave[1] )); then
-        errmsg="cpio reported an error"
-    elif (( pipesave[2] )); then
-        errmsg="$compress reported an error"
-    fi
+    for (( i = 0; i < ${#pipestatus[*]}; ++i )); do
+        if (( pipestatus[i] )); then
+            errmsg="${pipeprogs[i]} reported an error"
+            break
+        fi
+    done
 
     if (( _builderrors )); then
         warning "errors were encountered during the build. The image may not be complete."
@@ -313,8 +317,8 @@ process_preset() (
 trap 'cleanup 130' INT
 trap 'cleanup 143' TERM
 
-_opt_short='A:c:g:H:hk:nLMPp:r:S:sd:t:Vvz:'
-_opt_long=('add:' 'addhooks:' 'config:' 'generate:' 'hookhelp:' 'help'
+_opt_short='A:c:D:g:H:hk:nLMPp:r:S:sd:t:Vvz:'
+_opt_long=('add:' 'addhooks:' 'config:' 'generate:' 'hookdir': 'hookhelp:' 'help'
           'kernel:' 'listhooks' 'automods' 'moduleroot:' 'nocolor' 'allpresets'
           'preset:' 'skiphooks:' 'save' 'generatedir:' 'builddir:' 'version' 'verbose' 'compress:')
 
@@ -405,6 +409,11 @@ while :; do
             shift
             _optmoduleroot=$1
             ;;
+        -D|--hookdir)
+            shift
+            _d_flag_hooks+="$1/hooks:"
+            _d_flag_install+="$1/install:"
+            ;;
         --)
             shift
             break 2
@@ -415,6 +424,11 @@ done
 
 if [[ -t 1 ]] && (( _optcolor )); then
     try_enable_color
+fi
+
+if [[ -n $_d_flag_hooks && -n $_d_flag_install ]]; then
+    _d_hooks=${_d_flag_hooks%:}
+    _d_install=${_d_flag_install%:}
 fi
 
 # insist that /proc and /dev be mounted (important for chroots)
@@ -524,3 +538,4 @@ fi
 cleanup $(( !!_builderrors ))
 
 # vim: set ft=sh ts=4 sw=4 et:
+

@@ -5,9 +5,7 @@ VERSION = $(shell if test -f VERSION; then cat VERSION; else git describe | sed 
 DIRS = \
 	/usr/bin \
 	/etc/mkinitcpio.d \
-	/etc/initcpio/hooks \
 	/etc/initcpio/install \
-	/usr/lib/initcpio/hooks \
 	/usr/lib/initcpio/install \
 	/usr/lib/kernel/install.d \
 	/usr/share/mkinitcpio \
@@ -24,7 +22,6 @@ install: all
 
 	sed -e 's|\(^_f_config\)=.*|\1=/etc/mkinitcpio.conf|' \
 	    -e 's|\(^_f_functions\)=.*|\1=/usr/lib/initcpio/functions|' \
-	    -e 's|\(^_d_hooks\)=.*|\1=/etc/initcpio/hooks:/usr/lib/initcpio/hooks|' \
 	    -e 's|\(^_d_install\)=.*|\1=/etc/initcpio/install:/usr/lib/initcpio/install|' \
 	    -e 's|\(^_d_presets\)=.*|\1=/etc/mkinitcpio.d|' \
 	    -e 's|%VERSION%|$(VERSION)|g' \
@@ -40,7 +37,8 @@ install: all
 	install -m755 -t $(DESTDIR)/usr/lib/initcpio init shutdown
 	install -m644 -t $(DESTDIR)/usr/lib/initcpio init_functions functions
 
-	cp -at $(DESTDIR)/usr/lib/initcpio hooks install
+	cp -at $(DESTDIR)/usr/lib/initcpio install
+	install -m644 -t $(DESTDIR)/usr/share/mkinitcpio mkinitcpio.d/*
 	install -m644 tmpfiles/mkinitcpio.conf $(DESTDIR)/usr/lib/tmpfiles.d/mkinitcpio.conf
 
 	install -m755 50-mkinitcpio.install $(DESTDIR)/usr/lib/kernel/install.d/50-mkinitcpio.install
