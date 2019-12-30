@@ -18,7 +18,7 @@ msg "Configuring"
 . /config
 
 msg "Loading all modules"
-find  /lib/modules/  "*.ko" | sed "s/.*\///g" | grep ".ko" | sed "s/.ko$//g" | sed "s/^/modprobe /g"> /load_modules.sh
+find  /lib/modules/ | sed "s/.*\///g" | grep "\.ko$" | sed "s/.ko$//g" | sed "s/^/modprobe /g"> /load_modules.sh
 sh /load_modules.sh 2> /dev/null 
 
 # honor the old behavior of break=y as a synonym for break=premount
@@ -67,7 +67,7 @@ then
         warn "Overlayfs disabled!"
         mount -t tmpfs -o size=100% none /live_root
         msg "Copying rootfs files => /live_root"
-        cp -vprf /source/* /live_root/
+        cp -prf /source/* /live_root/
     else
         mount -t overlay -o lowerdir=/source/,upperdir=/donkey/a/,workdir=/donkey/b overlay /live_root
         mount -t tmpfs -o size=100% none /donkey/a
