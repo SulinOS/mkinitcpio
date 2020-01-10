@@ -195,7 +195,8 @@ compute_hookset() {
 }
 
 build_image() {
-    local out=$1 compress=$2 errmsg pipestatus
+    local out=$1 compress=$2 errmsg=
+    local -a pipesave cpio_opts
 
     case $compress in
         cat)
@@ -213,29 +214,27 @@ build_image() {
             ;;
     esac
 
+    cpio_opts=('-0' '-o' '-H' 'newc')
+    (( _optquiet )) && cpio_opts+=('--quiet')
+    if (( EUID != 0 )); then
+        warning 'Not building as root, ownership cannot be preserved'
+        cpio_opts+=('-R' '0:0')
+    fi
+
     pushd "$BUILDROOT" >/dev/null
-
-    # Reproducibility: set all timestamps to 0
-    find . -mindepth 1 -execdir touch -hcd "@0" "{}" +
-
-    # If this pipeline changes, |pipeprogs| below needs to be updated as well.
     find . -mindepth 1 -printf '%P\0' |
-            sort -z |
-            LANG=C bsdtar --null -cnf - -T - |
-            LANG=C bsdtar --uid 0 --gid 0 --null -cf - --format=newc @- |
+            LANG=C cpio "${cpio_opts[@]}" |
             $compress "${COMPRESSION_OPTIONS[@]}" > "$out"
-
-    pipestatus=("${PIPESTATUS[@]}")
-    pipeprogs=('find' 'sort' 'bsdtar (step 1)' 'bsdtar (step 2)' "$compress")
-
+    pipesave=("${PIPESTATUS[@]}") # save immediately
     popd >/dev/null
 
-    for (( i = 0; i < ${#pipestatus[*]}; ++i )); do
-        if (( pipestatus[i] )); then
-            errmsg="${pipeprogs[i]} reported an error"
-            break
-        fi
-    done
+    if (( pipesave[0] )); then
+        errmsg="find reported an error"
+    elif (( pipesave[1] )); then
+        errmsg="cpio reported an error"
+    elif (( pipesave[2] )); then
+        errmsg="$compress reported an error"
+    fi
 
     if (( _builderrors )); then
         warning "errors were encountered during the build. The image may not be complete."
@@ -247,6 +246,7 @@ build_image() {
         msg "Image generation successful"
     fi
 }
+
 
 process_preset() (
     local preset=$1 preset_image= preset_options=
