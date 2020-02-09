@@ -1,0 +1,19 @@
+#!/bin/bash
+
+add_module_list(){
+while read line
+do
+add_module $line
+done
+}
+build() {
+    lsmod | awk '{print $1}' | grep -v Module | add_module_list
+}
+
+help() {
+    cat <<HELPEOF
+This module install modules in initrd for loading
+HELPEOF
+}
+
+# vim: set ft=sh ts=4 sw=4 et:
