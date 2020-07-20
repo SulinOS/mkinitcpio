@@ -37,7 +37,7 @@ if [ -n "$boot"  ]
     for part in $list
     do
         debug "Looking for $part"
-        if is_file_avaiable "$part" "$boot/filesystem.squashfs"
+        if is_file_avaiable "$part" "main.sfs"
         then
            export root=$part
         fi
@@ -61,7 +61,7 @@ then
     mkdir -p /donkey/b # workdir
     mkdir -p /live_root/
     mkdir -p /source/ # lower
-    mount /new_root/$boot/filesystem.squashfs /source/ 2> /dev/null
+    mount /new_root/main.sfs /source/ 2> /dev/null
     if [ "$overlay" == "disable" ]
     then
         warn "Overlayfs disabled!"
@@ -78,7 +78,7 @@ then
     mkdir /new_root/cdrom/ 2> /dev/null
     mkdir /new_root/source/ 2> /dev/null
     mount $root /new_root/cdrom/ 2> /dev/null
-    mount /new_root/cdrom/$boot/filesystem.squashfs /new_root/source/ 2> /dev/null
+    mount /new_root/cdrom/main.sfs /new_root/source/ 2> /dev/null
 fi
 
 if [ "$(stat -c %D /)" = "$(stat -c %D /new_root)" ]; then

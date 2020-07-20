@@ -370,7 +370,7 @@ is_file_avaiable(){
     disktmp=$(mktemp)
     rm -rf $disktmp
     mkdir -p $disktmp || true 
-    mount -t auto "$1" $disktmp 2>/dev/null
+    timeout 10 mount -t auto "$1" $disktmp 2>/dev/null
     [ -f "$disktmp/$2" ] && [ -b "$1" ]
     status=$?
     umount $disktmp 2>/dev/null
